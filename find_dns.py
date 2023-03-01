@@ -1,0 +1,42 @@
+import csv
+import socket
+
+# define input and output file paths
+input_file = 'input.csv'
+output_file = 'output.csv'
+
+# define set to store unique DNS servers
+dns_servers = set()
+
+# open input file and read URLs from the URL column
+with open(input_file, 'r', encoding='utf-8-sig') as csvfile:
+    reader = csv.DictReader(csvfile, delimiter=',')
+    for row in reader:
+        url = row['URL']
+
+        # extract the hostname from the URL
+        hostname = url.split('//')[1].split('/')[0]
+
+        # get the list of IP addresses for the hostname
+        try:
+            ip_list = socket.getaddrinfo(hostname, 80)
+        except:
+            print("Website: " + hostname + " doesn't exist")
+            continue
+
+        # extract the DNS server IP address and name from the first IP address in the list
+        dns_ip = ip_list[0][4][0]
+        try:
+            dns_name = socket.gethostbyaddr(dns_ip)[0]
+        except:
+            dns_name = dns_ip
+
+        # add the DNS server to the set of unique DNS servers
+        dns_servers.add((dns_name, dns_ip))
+
+# write the unique DNS servers to the output file
+with open(output_file, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['DNS Server Name', 'DNS Server IP'])
+    for dns_server in dns_servers:
+        writer.writerow([dns_server[0], dns_server[1]])
