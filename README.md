@@ -12,6 +12,9 @@ Run `find_dns_ips.py` and then run `query.py`
 - Check for DNSSEC support
 - Record request and response sizes
 - Compute amplification potential
+- Calculate cost of doing a DDOS of size x
+- Look into the effect of rate limiting
+
 
 ## Optional goals
 - Also include Belgian and Serbian government
