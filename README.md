@@ -1,8 +1,5 @@
 # HackingLab
 
-# Setup
-Run `find_dns_ips.py` and then run `query.py`
-
 # Goals
 ## Goal of the project
 - Find the DNS servers of the Dutch government
@@ -22,7 +19,26 @@ Run `find_dns_ips.py` and then run `query.py`
 - Improve DNS compression estimates
 - Set up a proof of concept on own infrastructure (TU Delft/VPS/home)
 
+## Weekly goals
+### Week 3
+- List the failing DNS lookups
+  - Figure out why this happens
+  - Or take them out of the research
+- Look into security of Azure / DNS ports
+- Use wireshark/tshark as ground truth
+- Do count headers in our amplification calculation 
+  - Compare this with only calculating the payload like the original paper
+- Come up with a strategy to nicely do a check for ratelimiting
+- Start proof of concept of spoofing
+  - Docker or real IPs
+- Make a short midterm presentation
+
 # Progress
+## Week 2 (02-03-2023 - 09-03-2023)
+- Bash script that does ns lookups
+- Bash script that checks ANY size
+- Analyzed the quirks of these scripts
+
 ## Week 1 (23-02-2023 - 02-03-2023)
 - Formalized the goals of the project
 - Experimented with some scripts
