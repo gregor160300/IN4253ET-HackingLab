@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"time"
 
@@ -41,7 +40,6 @@ func main() {
     }
     for _, iface := range ifaces {
         if iface.Name == IFACE {
-            fmt.Println(iface.HardwareAddr)
             src_mac = iface.HardwareAddr
         }
     }
@@ -75,8 +73,8 @@ func send() {
         panic(err)
     }
     // Keep sending packets, TODO: put this in loop after it works
-    dst_ip := net.ParseIP("84.116.46.21")
-    packet := makePacket("www.google.com", dst_ip)
+    dst_ip := net.ParseIP("84.116.46.21")               // IP of the nameserver
+    packet := makePacket("google.com", dst_ip)      // Domain name to query
     err = handle.WritePacketData(packet)
     if err != nil {
         panic(err)
@@ -104,10 +102,14 @@ func makePacket(domainName string, destinationIP net.IP) []byte {
     udp.SetNetworkLayerForChecksum(&ip)
     qst := layers.DNSQuestion{
         Name: []byte(domainName),       // Domain name to request
-        Class: layers.DNSClassAny,
+        Class: layers.DNSClassIN,
+        Type: layers.DNSType(layers.DNSClassAny),
     }
     dns := layers.DNS{
         RD: true,
+        ID: 21020,          // Random ID
+        TC: false,
+        OpCode: 0,
         Questions: []layers.DNSQuestion{qst},
     }
     buffer := gopacket.NewSerializeBuffer()
