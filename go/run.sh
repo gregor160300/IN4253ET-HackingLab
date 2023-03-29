@@ -1,7 +1,8 @@
 #!/bin/sh
-GATEWAY_MAC=$(arp | grep _gateway | awk '{print $3}')
-TARGET_IP=192.168.178.70
+ping google.com -c 1
+# Get gateway MAC
+GATEWAY_MAC=$(arp | grep 192.168.1.1 | awk '{print $3}')
+TARGET_IP=192.168.1.11
 
-# Need sudo for accessing network interface
-sudo go run main.go --target_ip=$TARGET_IP --gateway=$GATEWAY_MAC --duration=3
+go run main.go --target_ip=$TARGET_IP --gateway=$GATEWAY_MAC --duration=10
 
