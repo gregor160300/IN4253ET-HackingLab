@@ -28,19 +28,8 @@ while IFS=, read -r f; do
     # Remove "http://" or "https://"
  
     ## Remove protocol part of url  ##
-    f="${f#http://}"
-    f="${f#https://}"
-    f="${f#ftp://}"
-    f="${f#scp://}"
-    f="${f#scp://}"
-    f="${f#sftp://}"
- 
-    ## Remove username and/or username:password part of URL  ##
-    f="${f#*:*@}"
-    f="${f#*@}"
- 
-    ## Remove rest of urls ##
-    f=${f%%/*}
+    f="$f" | sed -e 's|^[^/]*//||' -e 's|/.*$||' | sed -e 's|^[^.]*\.||'
+
 
     # Lookup the nameservers
     nameservers=$(dig +short NS $f | tr '\n' ';' | sed 's/,$//')
