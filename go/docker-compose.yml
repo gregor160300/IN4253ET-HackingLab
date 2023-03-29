@@ -1,13 +1,20 @@
 version: '3.9'
 
 services:
-  tcpdump:
-    build: .
+  victim:
+    build: victim/
     cap_add:
       - NET_ADMIN
     networks:
       tcpdump_network:
         ipv4_address: 192.168.1.10
+  attacker:
+    build: .
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tcpdump_network:
+        ipv4_address: 192.168.1.11
 
 networks:
   tcpdump_network:
@@ -15,4 +22,6 @@ networks:
       driver: default
       config:
         - subnet: 192.168.1.0/24
+    driver_opts:
+      com.docker.network.bridge.name: br_tcpdump
 

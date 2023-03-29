@@ -1,7 +1,11 @@
-FROM alpine:latest
+FROM golang:latest
 
-RUN apk update && apk add --no-cache tcpdump
+COPY . /app
+WORKDIR /app
 
-ENTRYPOINT ["tcpdump"]
-CMD ["-i", "eth0"]
+RUN apt update
+RUN apt install -y libpcap* net-tools iputils-ping
+RUN go install
+
+ENTRYPOINT ["sh", "./run.sh"]
 
