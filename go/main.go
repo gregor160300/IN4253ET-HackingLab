@@ -10,8 +10,6 @@ import (
 
 // CLI arguments
 var targetIP = flag.String("target_ip", "", "The IP address of the target of the attack")
-var gatewayMAC = flag.String("gateway", "", "The MAC address of the gateway")
-
 var iface = flag.String("iface", "eth0", "The network interface to use")
 var filename = flag.String("filename", "domains.csv", "A csv file with domain names")
 var numThreads = flag.Int("num_threads", 1, "The number of threads to run in parallel")
