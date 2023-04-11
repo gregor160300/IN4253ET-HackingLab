@@ -1,7 +1,6 @@
 package dnsamp
 
 import (
-	"fmt"
 	"math/rand"
 	"net"
 
@@ -95,7 +94,6 @@ func Send(servers []Target) {
                     panic(err)
                 }
                 // IP header src does not get used for some reason
-                fmt.Println(ipHeader)
                 err = conn.WriteTo(ipHeader, payload, nil)
                 if err != nil {
                     panic(err)
