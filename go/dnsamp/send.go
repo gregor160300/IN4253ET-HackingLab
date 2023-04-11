@@ -6,7 +6,8 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
+
+	"golang.org/x/net/ipv4"
 )
 
 
@@ -22,44 +23,21 @@ var options = gopacket.SerializeOptions{
         FixLengths:       true,
 }
 var netIface string
-var srcMac net.HardwareAddr
-var dstMac net.HardwareAddr
 var targetIP net.IP
 
-func getHardwareAdress() net.HardwareAddr {
-    var src_mac net.HardwareAddr
-    ifaces, err := net.Interfaces()
-    if err != nil {
-        panic(err)
-    }
-    for _, iface := range ifaces {
-        if iface.Name == netIface {
-            src_mac = iface.HardwareAddr
-        }
-    }
-    return src_mac
-}
-
-func Configure(iface string, destinationMac net.HardwareAddr, target net.IP) {
+func Configure(iface string, target net.IP) {
     netIface = iface
-    dstMac = destinationMac
-    srcMac = getHardwareAdress()
     targetIP = target
 }
 
 // create ANY request packet
-func makePacket(domainName string, nameserverIP net.IP) []byte {
-    ethernet := layers.Ethernet{
-        SrcMAC: srcMac,
-        DstMAC: dstMac,
-        EthernetType: layers.EthernetTypeIPv4,
-    }
+func makePacket(domainName string, nameserverIP net.IP) (*layers.IPv4, []byte) {
     ip := layers.IPv4{
-        Version: 4,
-        TTL: 64,
-        Protocol: layers.IPProtocolUDP,
         SrcIP: targetIP,
         DstIP: nameserverIP,
+        Protocol: layers.IPProtocolUDP,
+        Version: 4,
+        TTL: 64,
     }
     udp := layers.UDP{
         SrcPort: SRC_PORT,
@@ -80,29 +58,43 @@ func makePacket(domainName string, nameserverIP net.IP) []byte {
     }
     buffer := gopacket.NewSerializeBuffer()
     if err := gopacket.SerializeLayers(buffer, options,
-        &ethernet,
-        &ip,
         &udp,
         &dns,
     ); err != nil {
         panic(err)
     }
-    return buffer.Bytes()
+    return &ip, buffer.Bytes()
 }
 
 func Send(servers []Target) {
-    handle, err := pcap.OpenLive(netIface, 1500, false, pcap.BlockForever)
+    c, err := net.ListenPacket("ip4:udp", "")
     if err != nil {
         panic(err)
     }
+    conn, err := ipv4.NewRawConn(c)
+    if err != nil {
+        panic(err)
+    }
+    defer conn.Close()
     // Send packets forever
     for {
         for _, server := range servers {
             nameserverIP := net.ParseIP(server.NameServer)
             // Ignore invalid lines in the file
             if nameserverIP != nil {
-                packet := makePacket(server.DomainName, nameserverIP)
-                err = handle.WritePacketData(packet)
+                ip, payload := makePacket(server.DomainName, nameserverIP)
+                ip.SrcIP = targetIP 
+                ipHeaderBuf := gopacket.NewSerializeBuffer()
+                err := ip.SerializeTo(ipHeaderBuf, options)
+                if err != nil {
+                    panic(err)
+                }
+                ipHeader, err := ipv4.ParseHeader(ipHeaderBuf.Bytes())
+                if err != nil {
+                    panic(err)
+                }
+                // IP header src does not get used for some reason
+                err = conn.WriteTo(ipHeader, payload, nil)
                 if err != nil {
                     panic(err)
                 }
