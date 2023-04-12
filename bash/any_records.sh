@@ -13,13 +13,24 @@ do
     do
         # Calculate request size
         REQUEST=$(echo ${#DOMAIN})
-        REQUEST=$((REQUEST+83))
+        REQUEST=$((REQUEST+71))
+        
         # Perform dig command
         OUTPUT=$(dig -4 +notcp +ignore +bufsize=4096 @$NAME $DOMAIN ANY)
+        
         # Parse output from dig command
         TC_FLAG=$(echo "$OUTPUT" | grep -o "\btc\b" )
         RESPONSE=$(echo "$OUTPUT" | tail -n 2 | grep -E -o "\brcvd: [0-9]+\b" | awk '{print $2}')
+        
+        # Include headers in response size
+        # - 14 bytes for Ethernet
+        # - 20 bytes for IP
+        # - 8 bytes for UDP
+        RESPONSE=$((RESPONSE+42))
+        
+        # Get IP from nameserver
         NAME_IP=$(echo "$OUTPUT" | grep -E -o "SERVER: ([0-9]{1,3}[\.]){3}[0-9]{1,3}" | awk '{print $2}')
+
         # Print parsed output to stdout
         echo "$DOMAIN,$NAME,$NAME_IP,$REQUEST,$RESPONSE,$TC_FLAG"
     done
