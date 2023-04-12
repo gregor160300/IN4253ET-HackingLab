@@ -13,7 +13,7 @@ do
     do
         # Calculate request size
         REQUEST=$(echo ${#DOMAIN})
-        REQUEST=$((REQUEST+83))
+        REQUEST=$((REQUEST+71))
         # Perform dig command
         OUTPUT=$(dig -4 +notcp +ignore +bufsize=4096 @$NAME $DOMAIN ANY)
         # Parse output from dig command
