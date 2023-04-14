@@ -23,5 +23,9 @@ This folder contains the scripts used to obtain the CSV files in the `results` f
 ### Python
 This folder contains initial scripts we used to analyze the data and experiment. We later realized that the results from our Python scripts were unreliable so we switched to using `dig` inside bash scripts. The only scripts we used for the paper are the plotting scripts.
 
+### Go
+This folder contains the code for the proof of concept attack that was implemented as part of our experiment.
+
 ### Results
 This folder contains both CSV files as well as plots used in the paper. It might be interesting to look at the raw data and compare it a few years from the release of the paper.
+

